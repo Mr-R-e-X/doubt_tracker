@@ -42,18 +42,15 @@ const interval = setInterval(() => {
 
 
 function pageContainsAcceptReject() {
-    const el = document.querySelector("mentor-assigned-doubt");
-    const text = el ? el.innerText.trim() : "";
-    console.log(text)
-    return text.includes("Accept");
+  const el = document.querySelector("mentor-assigned-doubt");
+  if (!el) return false;
+
+  const text = el.innerText.trim();
+  return text.includes("Accept") || text.includes("Reject");
 }
 
-let alreadyAlerted = false;
-
-setInterval(() => {
-  if (!alreadyAlerted && pageContainsAcceptReject()) {
-    alreadyAlerted = true;
-
+const observer = new MutationObserver(() => {
+  if (pageContainsAcceptReject()) {
     chrome.runtime.sendMessage({
       type: "TEXT_FOUND",
       keywords: ["Accept"]
@@ -61,5 +58,11 @@ setInterval(() => {
 
     console.log("AN INCOMING DOUBT...");
   }
-  console.log("NO INCOMING DOUBT...")
-}, 5000);
+});
+
+observer.observe(document.body, {
+  childList: true,
+  subtree: true,
+  characterData: true
+});
+
