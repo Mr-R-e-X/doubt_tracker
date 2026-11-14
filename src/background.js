@@ -2,10 +2,11 @@ async function ensureOffscreen() {
   const exists = await chrome.offscreen.hasDocument();
   if (!exists) {
     await chrome.offscreen.createDocument({
-      url: "offscreen.html",
+      url: "src/offscreen.html",
       reasons: ["AUDIO_PLAYBACK"],
       justification: "Play alert sound"
     });
+
   }
 }
 

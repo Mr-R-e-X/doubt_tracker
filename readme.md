@@ -65,6 +65,25 @@ Safe for Angular / SPA pages (re-waits if the toggle is remounted).
 
 ---
 
+## Develop / build / share (Bun)
+
+Requires [Bun](https://bun.sh).
+
+```bash
+bun install
+bun run dev      # optional HMR during development
+bun run build    # minified extension → dist/
+bun run pack     # build + zip → doubt-tracker.zip
+```
+
+- Edit sources under `src/` (and audio under `public/`). Do not hand-edit `dist/`.
+- **Load unpacked:** Chrome → `chrome://extensions` → Developer mode → Load unpacked → select the `dist/` folder.
+- **Share:** send `doubt-tracker.zip` (recipients unzip and load that folder as unpacked, or load the zip contents).
+
+Production JS is minified/mangled for sharing; it can still be beautified — this is not strong IP protection.
+
+---
+
 ## Outcome
 
 - No missed doubts during your slot  

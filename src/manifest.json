@@ -5,16 +5,17 @@
   "permissions": ["storage", "offscreen"],
   "host_permissions": ["https://mentor.codingninjas.com/doubts/workplace*"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js",
+    "type": "module"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup.html",
     "default_title": "Doubt Tracker slot"
   },
   "content_scripts": [
     {
       "matches": ["https://mentor.codingninjas.com/doubts/workplace*"],
-      "js": ["content.js"],
+      "js": ["src/content.js"],
       "run_at": "document_idle"
     }
   ]
