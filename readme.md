@@ -38,13 +38,20 @@ This Chrome extension improves reliability on the **Coding Ninjas Mentor Doubt p
 - If the tab stays open, watching starts/stops when the clock enters or leaves the slot
 - Saving in the popup updates the open workplace tab without a reload
 
+### Auto Accept (opt-in)
+- Off by default — enable **Auto accept** in the popup
+- Set **Accept when seconds remaining** (default `20`, allowed `20`–`80`)
+- Uses the ~90s Accept window: e.g. `20` waits ~70s after Accept appears, then clicks Accept
+- Prefer at least **20** seconds remaining so slow networks still succeed before auto-reject
+- Pending auto-accept is cancelled if the Accept UI disappears or you turn the option off
+
 ---
 
 ## How It Works
 
 1. Injects at `document_idle`, waits for full page load, then waits for the Take Doubt UI
-2. Loads slot times from `chrome.storage.sync`
-3. While in slot: MutationObservers for toggle restore + new-doubt alerts
+2. Loads slot times and auto-accept settings from `chrome.storage.sync`
+3. While in slot: MutationObservers for toggle restore + new-doubt alerts (+ optional scheduled Accept)
 4. Service worker ensures an offscreen document and plays the correct sound
 
 Safe for Angular / SPA pages (re-waits if the toggle is remounted).

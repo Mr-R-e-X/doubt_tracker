@@ -1,11 +1,21 @@
-const DEFAULT_SLOT = { slotStart: "21:00", slotEnd: "23:59" };
+const DEFAULT_SETTINGS = {
+  slotStart: "21:00",
+  slotEnd: "23:59",
+  autoAcceptEnabled: false,
+  autoAcceptRemainingSec: 20
+};
 const TOGGLE_ID_FALLBACK = "#mat-mdc-slide-toggle-1-button";
 const SLOT_CHECK_MS = 30_000;
 const RESTORE_DELAY_MS = 1000;
 const DOUBT_DEBOUNCE_MS = 300;
+const DOUBT_ACCEPT_WINDOW_SEC = 90;
+const MIN_REMAINING_SEC = 20;
+const MAX_REMAINING_SEC = 80;
 
-let slotStart = DEFAULT_SLOT.slotStart;
-let slotEnd = DEFAULT_SLOT.slotEnd;
+let slotStart = DEFAULT_SETTINGS.slotStart;
+let slotEnd = DEFAULT_SETTINGS.slotEnd;
+let autoAcceptEnabled = DEFAULT_SETTINGS.autoAcceptEnabled;
+let autoAcceptRemainingSec = DEFAULT_SETTINGS.autoAcceptRemainingSec;
 let watching = false;
 let waitingForReady = false;
 let toggleObserver = null;
@@ -13,6 +23,7 @@ let doubtObserver = null;
 let remountObserver = null;
 let slotTimer = null;
 let doubtDebounceTimer = null;
+let autoAcceptTimer = null;
 let lastHadAcceptReject = false;
 
 function playAlert(sound) {
@@ -29,6 +40,12 @@ function isWithinSlot(now = new Date()) {
   const start = parseTimeToMinutes(slotStart);
   const end = parseTimeToMinutes(slotEnd);
   return current >= start && current <= end;
+}
+
+function clampRemainingSec(value) {
+  const n = Number(value);
+  if (Number.isNaN(n)) return DEFAULT_SETTINGS.autoAcceptRemainingSec;
+  return Math.min(MAX_REMAINING_SEC, Math.max(MIN_REMAINING_SEC, Math.round(n)));
 }
 
 function findTakeDoubtToggle() {
@@ -94,7 +111,48 @@ function pageContainsAcceptReject() {
   return text.includes("Accept") || text.includes("Reject");
 }
 
+function findAcceptButton() {
+  const root = document.querySelector("mentor-assigned-doubt");
+  if (!root) return null;
+
+  const candidates = root.querySelectorAll("button, a, [role='button']");
+  for (const el of candidates) {
+    const text = (el.textContent || "").replace(/\s+/g, " ").trim();
+    if (/^accept$/i.test(text)) return el;
+  }
+
+  return null;
+}
+
+function clearAutoAcceptTimer() {
+  if (autoAcceptTimer) {
+    clearTimeout(autoAcceptTimer);
+    autoAcceptTimer = null;
+  }
+}
+
+function scheduleAutoAccept() {
+  clearAutoAcceptTimer();
+  if (!autoAcceptEnabled) return;
+
+  const remaining = clampRemainingSec(autoAcceptRemainingSec);
+  const delayMs = Math.max(0, (DOUBT_ACCEPT_WINDOW_SEC - remaining) * 1000);
+
+  autoAcceptTimer = setTimeout(() => {
+    autoAcceptTimer = null;
+    if (!autoAcceptEnabled || !pageContainsAcceptReject()) return;
+
+    const acceptBtn = findAcceptButton();
+    if (acceptBtn?.isConnected) {
+      acceptBtn.click();
+      console.log("AUTO ACCEPTED DOUBT");
+    }
+  }, delayMs);
+}
+
 function stopWatchers() {
+  clearAutoAcceptTimer();
+
   if (toggleObserver) {
     toggleObserver.disconnect();
     toggleObserver = null;
@@ -161,6 +219,11 @@ function watchNewDoubts() {
       if (!lastHadAcceptReject && hasAcceptReject) {
         playAlert("doubt");
         console.log("AN INCOMING DOUBT...");
+        scheduleAutoAccept();
+      }
+
+      if (lastHadAcceptReject && !hasAcceptReject) {
+        clearAutoAcceptTimer();
       }
 
       lastHadAcceptReject = hasAcceptReject;
@@ -213,10 +276,14 @@ function syncWatchingState() {
   }
 }
 
-async function loadSlotSettings() {
-  const stored = await chrome.storage.sync.get(DEFAULT_SLOT);
-  slotStart = stored.slotStart || DEFAULT_SLOT.slotStart;
-  slotEnd = stored.slotEnd || DEFAULT_SLOT.slotEnd;
+async function loadSettings() {
+  const stored = await chrome.storage.sync.get(DEFAULT_SETTINGS);
+  slotStart = stored.slotStart || DEFAULT_SETTINGS.slotStart;
+  slotEnd = stored.slotEnd || DEFAULT_SETTINGS.slotEnd;
+  autoAcceptEnabled = Boolean(stored.autoAcceptEnabled);
+  autoAcceptRemainingSec = clampRemainingSec(
+    stored.autoAcceptRemainingSec ?? DEFAULT_SETTINGS.autoAcceptRemainingSec
+  );
 }
 
 async function bootstrapAfterReady() {
@@ -234,7 +301,7 @@ async function bootstrapAfterReady() {
 
 async function init() {
   await waitForDocumentComplete();
-  await loadSlotSettings();
+  await loadSettings();
   await bootstrapAfterReady();
 
   if (slotTimer) clearInterval(slotTimer);
@@ -244,10 +311,19 @@ async function init() {
     if (area !== "sync") return;
 
     if (changes.slotStart) {
-      slotStart = changes.slotStart.newValue || DEFAULT_SLOT.slotStart;
+      slotStart = changes.slotStart.newValue || DEFAULT_SETTINGS.slotStart;
     }
     if (changes.slotEnd) {
-      slotEnd = changes.slotEnd.newValue || DEFAULT_SLOT.slotEnd;
+      slotEnd = changes.slotEnd.newValue || DEFAULT_SETTINGS.slotEnd;
+    }
+    if (changes.autoAcceptEnabled) {
+      autoAcceptEnabled = Boolean(changes.autoAcceptEnabled.newValue);
+      if (!autoAcceptEnabled) clearAutoAcceptTimer();
+    }
+    if (changes.autoAcceptRemainingSec) {
+      autoAcceptRemainingSec = clampRemainingSec(
+        changes.autoAcceptRemainingSec.newValue
+      );
     }
 
     syncWatchingState();

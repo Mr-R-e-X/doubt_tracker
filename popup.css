@@ -48,13 +48,61 @@ label {
   color: var(--muted);
 }
 
-input[type="time"] {
+input[type="time"],
+input[type="number"] {
   padding: 8px 10px;
   border: 1px solid #2a3542;
   border-radius: 6px;
   background: var(--surface);
   color: var(--text);
   font-size: 0.95rem;
+}
+
+.auto-accept {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid #2a3542;
+}
+
+.toggle-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.toggle-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.hint strong {
+  color: var(--outside);
+  font-weight: 650;
+}
+
+.auto-accept-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auto-accept-options[hidden] {
+  display: none;
 }
 
 button {
