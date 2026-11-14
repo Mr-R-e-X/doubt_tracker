@@ -1,4 +1,4 @@
-async function playSound() {
+async function ensureOffscreen() {
   const exists = await chrome.offscreen.hasDocument();
   if (!exists) {
     await chrome.offscreen.createDocument({
@@ -7,17 +7,15 @@ async function playSound() {
       justification: "Play alert sound"
     });
   }
-
-  chrome.runtime.sendMessage({ type: "PLAY_SOUND" });
 }
 
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === "SWITCH_CHANGED") {
-    playSound();
-  }
-  if(msg.type === "TEXT_FOUND"){
-    playSound()
-  }
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (msg.type !== "PLAY_ALERT" || !sender.tab) return;
+
+  ensureOffscreen().then(() => {
+    chrome.runtime.sendMessage({
+      type: "PLAY_ALERT",
+      sound: msg.sound
+    });
+  });
 });
-
-

@@ -1,10 +1,15 @@
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === "PLAY_SOUND") {
-    const audio = new Audio(chrome.runtime.getURL("alert.mp3"));
-    audio.play();
-  }
-  if(msg.type === "TEXT_FOUND"){
-    const audio = new Audio(chrome.runtime.getURL("ding.mp3"));
-    audio.play();
-  }
+const SOUND_FILES = {
+  toggle: "alert.mp3",
+  doubt: "ding.mp3"
+};
+
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  // Ignore content-script broadcasts; only play when relayed by the service worker
+  if (msg.type !== "PLAY_ALERT" || sender.tab) return;
+
+  const file = SOUND_FILES[msg.sound];
+  if (!file) return;
+
+  const audio = new Audio(chrome.runtime.getURL(file));
+  audio.play();
 });

@@ -1,22 +1,21 @@
 {
-    "manifest_version": 3,
-    "name": "TRACK CN DOUBT PAGE",
-    "version": "1.0",
-    "permissions": ["activeTab", "offscreen"],
-    "host_permissions": ["https://mentor.codingninjas.com/doubts/workplace"],
-    "background": {
-        "service_worker": "background.js"
-    },
-    "content_scripts": [
-        {
-            "matches": ["https://mentor.codingninjas.com/doubts/workplace"],
-            "js":["content.js"]
-        }
-    ],
-    "web_accessible_resources": [
-        {
-        "resources": ["alert.mp3", "ding.mp3"],
-        "matches": ["<all_urls>"]
-        }
+  "manifest_version": 3,
+  "name": "TRACK CN DOUBT PAGE",
+  "version": "1.1",
+  "permissions": ["storage", "offscreen"],
+  "host_permissions": ["https://mentor.codingninjas.com/doubts/workplace*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Doubt Tracker slot"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://mentor.codingninjas.com/doubts/workplace*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
   ]
 }
