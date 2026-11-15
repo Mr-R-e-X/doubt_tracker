@@ -35,20 +35,18 @@ This Chrome extension improves reliability on the **Coding Ninjas Mentor Doubt p
 
 - Monitors the assigned doubt section during your slot
 - Plays the configured doubt sound once when **Accept / Reject** appears (edge-detected, not on every DOM tweak)
-- Toggle restore still uses built-in `alert.mp3`
-
 ### Alert sound (popup)
 
 - **Enable alert sound** — mute/unmute both doubt and toggle alerts
 - **Volume** — applies to both alert types
-- **Doubt sound** — choose built-in `ding.mp3` / `alert.mp3`, or a custom upload
-- Custom uploads: up to **3** files, **4 MB** each (stored in the browser; doubt alerts only)
-- **Test sound** — plays the selected project/custom file in the popup only (user gesture); live workplace alerts use the classic offscreen player with the same settings
+- **Doubt sound** / **Toggle sound** — each can be `ding.mp3`, `alert.mp3`, or any custom upload
+- Custom uploads: up to **3** files, **4 MB** each (options tab; assign in the popup)
+- **Test doubt** / **Test toggle** — preview each assignment in the popup
 
 ### Sounds
 
 - Default doubt ding (`public/ding.mp3`) is `notify-1.mp3` from [soft-sounds](https://github.com/coreyepstein/soft-sounds) (**CC0 1.0**)
-- Toggle restore uses project `public/alert.mp3`
+- Default toggle sound is project `public/alert.mp3`
 
 ### Slot Schedule (popup)
 

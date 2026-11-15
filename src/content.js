@@ -6,9 +6,9 @@ const DEFAULT_SETTINGS = {
   audioEnabled: true,
   audioVolume: 1,
   doubtSoundId: "ding.mp3",
+  toggleSoundId: "alert.mp3",
 };
 const BUILTIN_SOUNDS = ["ding.mp3", "alert.mp3"];
-const TOGGLE_SOUND_FILE = "alert.mp3";
 const TOGGLE_ID_FALLBACK = "#mat-mdc-slide-toggle-1-button";
 const SLOT_CHECK_MS = 30_000;
 const RESTORE_DELAY_MS = 1000;
@@ -49,6 +49,7 @@ async function loadAudioPlaySettings() {
       audioEnabled: DEFAULT_SETTINGS.audioEnabled,
       audioVolume: DEFAULT_SETTINGS.audioVolume,
       doubtSoundId: DEFAULT_SETTINGS.doubtSoundId,
+      toggleSoundId: DEFAULT_SETTINGS.toggleSoundId,
     }),
     chrome.storage.local.get({ customAudios: [] }),
   ]);
@@ -57,25 +58,38 @@ async function loadAudioPlaySettings() {
     audioEnabled: syncData.audioEnabled ?? DEFAULT_SETTINGS.audioEnabled,
     audioVolume: clampVolume(syncData.audioVolume ?? DEFAULT_SETTINGS.audioVolume),
     doubtSoundId: syncData.doubtSoundId || DEFAULT_SETTINGS.doubtSoundId,
+    toggleSoundId: syncData.toggleSoundId || DEFAULT_SETTINGS.toggleSoundId,
     customAudios: Array.isArray(localData.customAudios) ? localData.customAudios : [],
   };
 }
 
-function resolveAlertSrc(sound, settings) {
-  if (sound === "toggle") {
-    return chrome.runtime.getURL(TOGGLE_SOUND_FILE);
-  }
-  if (sound !== "doubt") return null;
-
-  const { doubtSoundId, customAudios } = settings;
-  if (BUILTIN_SOUNDS.includes(doubtSoundId)) {
-    return chrome.runtime.getURL(doubtSoundId);
+function resolveSoundSrc(soundId, customAudios, fallbackId) {
+  if (BUILTIN_SOUNDS.includes(soundId)) {
+    return chrome.runtime.getURL(soundId);
   }
 
-  const custom = customAudios.find((t) => t.id === doubtSoundId);
+  const custom = customAudios.find((t) => t.id === soundId);
   if (custom?.dataUrl) return custom.dataUrl;
 
-  return chrome.runtime.getURL(DEFAULT_SETTINGS.doubtSoundId);
+  return chrome.runtime.getURL(fallbackId);
+}
+
+function resolveAlertSrc(sound, settings) {
+  if (sound === "toggle") {
+    return resolveSoundSrc(
+      settings.toggleSoundId,
+      settings.customAudios,
+      DEFAULT_SETTINGS.toggleSoundId,
+    );
+  }
+  if (sound === "doubt") {
+    return resolveSoundSrc(
+      settings.doubtSoundId,
+      settings.customAudios,
+      DEFAULT_SETTINGS.doubtSoundId,
+    );
+  }
+  return null;
 }
 
 function requestOffscreenFallback(sound) {

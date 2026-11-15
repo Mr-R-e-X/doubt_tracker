@@ -1,0 +1,25 @@
+body.options-page {
+  min-width: 0;
+  min-height: 100vh;
+}
+
+body.options-page main {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+body.options-page input[type="file"] {
+  width: 100%;
+  padding: 8px 0;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+body.options-page .custom-audio-item {
+  max-width: none;
+}
+
+body.options-page .custom-audio-item span {
+  max-width: 280px;
+}

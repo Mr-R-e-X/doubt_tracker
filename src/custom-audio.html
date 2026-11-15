@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Custom alert sounds – Doubt Tracker</title>
+    <link rel="stylesheet" href="popup.css" />
+    <link rel="stylesheet" href="custom-audio.css" />
+  </head>
+  <body class="options-page">
+    <main>
+      <h1>Custom alert sounds</h1>
+      <p class="subtitle">
+        Upload audio here in a normal tab. The extension popup closes when the file picker opens, so
+        uploads cannot run inside the popup.
+      </p>
+
+      <div class="custom-audio-box">
+        <input type="file" id="customAudioFile" accept="audio/*" />
+        <p class="hint">Up to 3 files, max 4 MB each. Used for doubt alerts only.</p>
+        <ul id="customAudioList" class="custom-audio-list"></ul>
+      </div>
+
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="./custom-audio.js"></script>
+  </body>
+</html>

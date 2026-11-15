@@ -157,7 +157,8 @@ input[type="range"]#audioVolume {
   margin: 0;
 }
 
-select#doubtSoundId {
+select#doubtSoundId,
+select#toggleSoundId {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -167,9 +168,16 @@ select#doubtSoundId {
   cursor: pointer;
 }
 
-select#doubtSoundId:focus {
+select#doubtSoundId:focus,
+select#toggleSoundId:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.test-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .custom-audio-box {

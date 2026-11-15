@@ -1,12 +1,12 @@
 const LOG_PREFIX = "[DoubtTracker]";
 const OFFSCREEN_READY_TIMEOUT_MS = 1000;
 const BUILTIN_SOUNDS = ["ding.mp3", "alert.mp3"];
-const TOGGLE_SOUND_FILE = "alert.mp3";
 
 const AUDIO_DEFAULTS = {
   audioEnabled: true,
   audioVolume: 1,
   doubtSoundId: "ding.mp3",
+  toggleSoundId: "alert.mp3",
 };
 
 let offscreenReady = false;
@@ -30,6 +30,7 @@ async function seedAudioDefaults() {
     "audioEnabled",
     "audioVolume",
     "doubtSoundId",
+    "toggleSoundId",
   ]);
 
   const patch = {};
@@ -42,10 +43,21 @@ async function seedAudioDefaults() {
   if (!Object.hasOwn(stored, "doubtSoundId")) {
     patch.doubtSoundId = AUDIO_DEFAULTS.doubtSoundId;
   }
+  if (!Object.hasOwn(stored, "toggleSoundId")) {
+    patch.toggleSoundId = AUDIO_DEFAULTS.toggleSoundId;
+  }
 
   if (Object.keys(patch).length === 0) return;
   await chrome.storage.sync.set(patch);
   log("seeded audio defaults", patch);
+}
+
+function resolveSoundSrc(soundId, customAudios, fallbackId) {
+  if (BUILTIN_SOUNDS.includes(soundId)) {
+    return chrome.runtime.getURL(soundId);
+  }
+  const custom = customAudios.find((t) => t.id === soundId);
+  return custom?.dataUrl || chrome.runtime.getURL(fallbackId);
 }
 
 async function resolvePlayPayload(sound) {
@@ -57,6 +69,7 @@ async function resolvePlayPayload(sound) {
   const audioEnabled = syncData.audioEnabled ?? AUDIO_DEFAULTS.audioEnabled;
   const volume = clampVolume(syncData.audioVolume ?? AUDIO_DEFAULTS.audioVolume);
   const doubtSoundId = syncData.doubtSoundId || AUDIO_DEFAULTS.doubtSoundId;
+  const toggleSoundId = syncData.toggleSoundId || AUDIO_DEFAULTS.toggleSoundId;
   const customAudios = Array.isArray(localData.customAudios) ? localData.customAudios : [];
 
   if (!audioEnabled) {
@@ -65,14 +78,9 @@ async function resolvePlayPayload(sound) {
 
   let src = null;
   if (sound === "toggle") {
-    src = chrome.runtime.getURL(TOGGLE_SOUND_FILE);
+    src = resolveSoundSrc(toggleSoundId, customAudios, AUDIO_DEFAULTS.toggleSoundId);
   } else if (sound === "doubt") {
-    if (BUILTIN_SOUNDS.includes(doubtSoundId)) {
-      src = chrome.runtime.getURL(doubtSoundId);
-    } else {
-      const custom = customAudios.find((t) => t.id === doubtSoundId);
-      src = custom?.dataUrl || chrome.runtime.getURL(AUDIO_DEFAULTS.doubtSoundId);
-    }
+    src = resolveSoundSrc(doubtSoundId, customAudios, AUDIO_DEFAULTS.doubtSoundId);
   }
 
   return { enabled: true, volume, src, sound };

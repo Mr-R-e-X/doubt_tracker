@@ -2,16 +2,17 @@ const LOG_PREFIX = "[DoubtTracker]";
 const LOAD_TIMEOUT_MS = 3000;
 
 const BUILTIN_SOUNDS = ["ding.mp3", "alert.mp3"];
-const TOGGLE_SOUND_FILE = "alert.mp3";
 const AUDIO_DEFAULTS = {
   audioEnabled: true,
   audioVolume: 1,
   doubtSoundId: "ding.mp3",
+  toggleSoundId: "alert.mp3",
 };
 
 let audioEnabled = AUDIO_DEFAULTS.audioEnabled;
 let audioVolume = AUDIO_DEFAULTS.audioVolume;
 let doubtSoundId = AUDIO_DEFAULTS.doubtSoundId;
+let toggleSoundId = AUDIO_DEFAULTS.toggleSoundId;
 let customAudios = [];
 
 function log(...args) {
@@ -33,27 +34,28 @@ async function loadAudioSettings() {
   audioEnabled = syncData.audioEnabled ?? AUDIO_DEFAULTS.audioEnabled;
   audioVolume = clampVolume(syncData.audioVolume ?? AUDIO_DEFAULTS.audioVolume);
   doubtSoundId = syncData.doubtSoundId || AUDIO_DEFAULTS.doubtSoundId;
+  toggleSoundId = syncData.toggleSoundId || AUDIO_DEFAULTS.toggleSoundId;
   customAudios = Array.isArray(localData.customAudios) ? localData.customAudios : [];
 }
 
-function resolveDoubtSrc() {
-  if (BUILTIN_SOUNDS.includes(doubtSoundId)) {
-    return chrome.runtime.getURL(doubtSoundId);
+function resolveSoundSrc(soundId, fallbackId) {
+  if (BUILTIN_SOUNDS.includes(soundId)) {
+    return chrome.runtime.getURL(soundId);
   }
 
-  const custom = customAudios.find((t) => t.id === doubtSoundId);
+  const custom = customAudios.find((t) => t.id === soundId);
   if (custom?.dataUrl) return custom.dataUrl;
 
-  log("doubt sound missing, falling back to ding.mp3", doubtSoundId);
-  return chrome.runtime.getURL(AUDIO_DEFAULTS.doubtSoundId);
+  log("sound missing, falling back", soundId, fallbackId);
+  return chrome.runtime.getURL(fallbackId);
 }
 
 function resolveSrc(sound) {
   if (sound === "toggle") {
-    return chrome.runtime.getURL(TOGGLE_SOUND_FILE);
+    return resolveSoundSrc(toggleSoundId, AUDIO_DEFAULTS.toggleSoundId);
   }
   if (sound === "doubt") {
-    return resolveDoubtSrc();
+    return resolveSoundSrc(doubtSoundId, AUDIO_DEFAULTS.doubtSoundId);
   }
   return null;
 }
@@ -117,7 +119,7 @@ async function playSound(sound) {
 }
 
 function announceReady() {
-  log("offscreen ready", { audioEnabled, audioVolume, doubtSoundId });
+  log("offscreen ready", { audioEnabled, audioVolume, doubtSoundId, toggleSoundId });
   chrome.runtime.sendMessage({ type: "OFFSCREEN_READY" }, () => {
     void chrome.runtime.lastError;
   });
@@ -146,6 +148,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
     }
     if (changes.doubtSoundId) {
       doubtSoundId = changes.doubtSoundId.newValue || AUDIO_DEFAULTS.doubtSoundId;
+    }
+    if (changes.toggleSoundId) {
+      toggleSoundId = changes.toggleSoundId.newValue || AUDIO_DEFAULTS.toggleSoundId;
     }
   }
 

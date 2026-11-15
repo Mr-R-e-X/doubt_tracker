@@ -12,6 +12,10 @@
     "default_popup": "src/popup.html",
     "default_title": "Doubt Tracker slot"
   },
+  "options_ui": {
+    "page": "src/custom-audio.html",
+    "open_in_tab": true
+  },
   "content_scripts": [
     {
       "matches": ["https://mentor.codingninjas.com/doubts/workplace*"],

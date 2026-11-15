@@ -70,16 +70,31 @@
             </select>
           </label>
 
+          <label>
+            Toggle sound
+            <select id="toggleSoundId">
+              <option value="ding.mp3">Default Ding</option>
+              <option value="alert.mp3" selected>Alert Tone</option>
+            </select>
+          </label>
+
+          <p class="hint">Custom uploads can be assigned to doubt and/or toggle.</p>
+
           <div class="custom-audio-box">
-            <input type="file" id="customAudioFile" accept="audio/*" hidden />
             <button type="button" id="pickAudioBtn" class="btn-secondary">
               + Add custom audio
             </button>
-            <p class="hint">Up to 3 files, max 4 MB each. Used for doubt alerts only.</p>
+            <p class="hint">
+              Opens a tab to upload (popup cannot use the file picker). Up to 3 files, max 4 MB
+              each.
+            </p>
             <ul id="customAudioList" class="custom-audio-list"></ul>
           </div>
 
-          <button type="button" id="testAudioBtn" class="btn-secondary">Test sound</button>
+          <div class="test-buttons">
+            <button type="button" id="testAudioBtn" class="btn-secondary">Test doubt</button>
+            <button type="button" id="testToggleBtn" class="btn-secondary">Test toggle</button>
+          </div>
         </div>
       </section>
 
