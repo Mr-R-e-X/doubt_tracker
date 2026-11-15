@@ -131,33 +131,39 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 
   // Prefer explicit payload from SW (volume + src)
   if (msg.src) {
-    playWithSrc(msg.src, msg.volume ?? AUDIO_DEFAULTS.audioVolume, msg.sound);
+    playWithSrc(msg.src, msg.volume ?? AUDIO_DEFAULTS.audioVolume, msg.sound).catch((err) =>
+      log("playWithSrc failed", err?.message || err),
+    );
     return;
   }
 
-  playSound(msg.sound);
+  playSound(msg.sound).catch((err) => log("playSound failed", err?.message || err));
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "sync") {
-    if (changes.audioEnabled) {
-      audioEnabled = changes.audioEnabled.newValue ?? AUDIO_DEFAULTS.audioEnabled;
+  try {
+    if (area === "sync") {
+      if (changes.audioEnabled) {
+        audioEnabled = changes.audioEnabled.newValue ?? AUDIO_DEFAULTS.audioEnabled;
+      }
+      if (changes.audioVolume) {
+        audioVolume = clampVolume(changes.audioVolume.newValue);
+      }
+      if (changes.doubtSoundId) {
+        doubtSoundId = changes.doubtSoundId.newValue || AUDIO_DEFAULTS.doubtSoundId;
+      }
+      if (changes.toggleSoundId) {
+        toggleSoundId = changes.toggleSoundId.newValue || AUDIO_DEFAULTS.toggleSoundId;
+      }
     }
-    if (changes.audioVolume) {
-      audioVolume = clampVolume(changes.audioVolume.newValue);
-    }
-    if (changes.doubtSoundId) {
-      doubtSoundId = changes.doubtSoundId.newValue || AUDIO_DEFAULTS.doubtSoundId;
-    }
-    if (changes.toggleSoundId) {
-      toggleSoundId = changes.toggleSoundId.newValue || AUDIO_DEFAULTS.toggleSoundId;
-    }
-  }
 
-  if (area === "local" && changes.customAudios) {
-    customAudios = Array.isArray(changes.customAudios.newValue)
-      ? changes.customAudios.newValue
-      : [];
+    if (area === "local" && changes.customAudios) {
+      customAudios = Array.isArray(changes.customAudios.newValue)
+        ? changes.customAudios.newValue
+        : [];
+    }
+  } catch (err) {
+    log("storage.onChanged handler failed", err?.message || err);
   }
 });
 
@@ -167,6 +173,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
   } catch (err) {
     log("initial settings load failed", err?.message || err);
   } finally {
-    announceReady();
+    try {
+      announceReady();
+    } catch (err) {
+      log("announceReady failed", err?.message || err);
+    }
   }
-})();
+})().catch((err) => log("offscreen boot failed", err?.message || err));

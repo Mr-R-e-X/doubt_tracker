@@ -134,33 +134,59 @@ function armReadyTimeout() {
   }, OFFSCREEN_READY_TIMEOUT_MS);
 }
 
+function isAlreadyExistsError(err) {
+  const message = String(err?.message || err || "");
+  return /already exists|single offscreen document/i.test(message);
+}
+
 async function ensureOffscreen() {
-  const exists = await chrome.offscreen.hasDocument();
-  if (exists) {
-    if (!waitingForOffscreenReady && !creatingOffscreen) {
-      offscreenReady = true;
+  try {
+    const exists = await chrome.offscreen.hasDocument();
+    if (exists) {
+      if (!waitingForOffscreenReady && !creatingOffscreen) {
+        offscreenReady = true;
+      }
+      return;
     }
-    return;
+
+    offscreenReady = false;
+    waitingForOffscreenReady = true;
+    log("offscreen create");
+    armReadyTimeout();
+
+    if (!creatingOffscreen) {
+      creatingOffscreen = chrome.offscreen
+        .createDocument({
+          url: "src/offscreen.html",
+          reasons: ["AUDIO_PLAYBACK"],
+          justification: "Play alert sound",
+        })
+        .catch((err) => {
+          if (isAlreadyExistsError(err)) {
+            log("offscreen already exists — treating as ready");
+            markOffscreenReady("already-exists");
+            return;
+          }
+          waitingForOffscreenReady = false;
+          clearReadyTimeout();
+          throw err;
+        })
+        .finally(() => {
+          creatingOffscreen = null;
+        });
+    }
+
+    await creatingOffscreen;
+  } catch (err) {
+    if (isAlreadyExistsError(err)) {
+      log("offscreen already exists — treating as ready");
+      markOffscreenReady("already-exists");
+      return;
+    }
+    log("ensureOffscreen failed", err?.message || err);
+    waitingForOffscreenReady = false;
+    clearReadyTimeout();
   }
-
-  offscreenReady = false;
-  waitingForOffscreenReady = true;
-  log("offscreen create");
-  armReadyTimeout();
-
-  if (!creatingOffscreen) {
-    creatingOffscreen = chrome.offscreen
-      .createDocument({
-        url: "src/offscreen.html",
-        reasons: ["AUDIO_PLAYBACK"],
-        justification: "Play alert sound",
-      })
-      .finally(() => {
-        creatingOffscreen = null;
-      });
-  }
-
-  await creatingOffscreen;
 }
 
 async function handlePlayAlert(sound) {
@@ -183,11 +209,9 @@ async function handlePlayAlert(sound) {
 
 chrome.runtime.onInstalled.addListener(() => {
   seedAudioDefaults().catch((err) => log("seed onInstalled failed", err?.message || err));
-  ensureOffscreen().catch((err) => log("warmup onInstalled failed", err?.message || err));
 });
 
 seedAudioDefaults().catch((err) => log("seed on startup failed", err?.message || err));
-ensureOffscreen().catch((err) => log("warmup on startup failed", err?.message || err));
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === "OFFSCREEN_READY") {
