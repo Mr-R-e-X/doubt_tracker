@@ -18,5 +18,11 @@
       "js": ["src/content.js"],
       "run_at": "document_idle"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["ding.mp3", "alert.mp3"],
+      "matches": ["https://mentor.codingninjas.com/*"]
+    }
   ]
 }

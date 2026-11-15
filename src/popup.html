@@ -42,6 +42,47 @@
         </div>
       </section>
 
+      <section class="audio-settings">
+        <label class="toggle-row">
+          <span>Enable alert sound</span>
+          <input type="checkbox" id="audioEnabled" checked />
+        </label>
+
+        <p class="hint">
+          Mute, volume, and doubt sound apply to live workplace alerts as you change them. Slot and
+          auto-accept still need Save.
+        </p>
+
+        <div id="audioOptions" class="audio-options">
+          <div class="volume-control">
+            <div class="volume-header">
+              <span>Volume</span>
+              <span id="audioVolumeLabel" class="volume-badge">100%</span>
+            </div>
+            <input type="range" id="audioVolume" min="0" max="1" step="0.05" value="1" />
+          </div>
+
+          <label>
+            Doubt sound
+            <select id="doubtSoundId">
+              <option value="ding.mp3" selected>Default Ding</option>
+              <option value="alert.mp3">Alert Tone</option>
+            </select>
+          </label>
+
+          <div class="custom-audio-box">
+            <input type="file" id="customAudioFile" accept="audio/*" hidden />
+            <button type="button" id="pickAudioBtn" class="btn-secondary">
+              + Add custom audio
+            </button>
+            <p class="hint">Up to 3 files, max 4 MB each. Used for doubt alerts only.</p>
+            <ul id="customAudioList" class="custom-audio-list"></ul>
+          </div>
+
+          <button type="button" id="testAudioBtn" class="btn-secondary">Test sound</button>
+        </div>
+      </section>
+
       <button type="button" id="save">Save</button>
       <p id="status" class="status" aria-live="polite"></p>
     </main>

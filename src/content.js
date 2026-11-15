@@ -3,7 +3,12 @@ const DEFAULT_SETTINGS = {
   slotEnd: "23:59",
   autoAcceptEnabled: false,
   autoAcceptRemainingSec: 20,
+  audioEnabled: true,
+  audioVolume: 1,
+  doubtSoundId: "ding.mp3",
 };
+const BUILTIN_SOUNDS = ["ding.mp3", "alert.mp3"];
+const TOGGLE_SOUND_FILE = "alert.mp3";
 const TOGGLE_ID_FALLBACK = "#mat-mdc-slide-toggle-1-button";
 const SLOT_CHECK_MS = 30_000;
 const RESTORE_DELAY_MS = 1000;
@@ -32,13 +37,78 @@ function log(...args) {
   console.log(LOG_PREFIX, ...args);
 }
 
-function playAlert(sound) {
+function clampVolume(value) {
+  const n = Number(value);
+  if (Number.isNaN(n)) return DEFAULT_SETTINGS.audioVolume;
+  return Math.min(1, Math.max(0, n));
+}
+
+async function loadAudioPlaySettings() {
+  const [syncData, localData] = await Promise.all([
+    chrome.storage.sync.get({
+      audioEnabled: DEFAULT_SETTINGS.audioEnabled,
+      audioVolume: DEFAULT_SETTINGS.audioVolume,
+      doubtSoundId: DEFAULT_SETTINGS.doubtSoundId,
+    }),
+    chrome.storage.local.get({ customAudios: [] }),
+  ]);
+
+  return {
+    audioEnabled: syncData.audioEnabled ?? DEFAULT_SETTINGS.audioEnabled,
+    audioVolume: clampVolume(syncData.audioVolume ?? DEFAULT_SETTINGS.audioVolume),
+    doubtSoundId: syncData.doubtSoundId || DEFAULT_SETTINGS.doubtSoundId,
+    customAudios: Array.isArray(localData.customAudios) ? localData.customAudios : [],
+  };
+}
+
+function resolveAlertSrc(sound, settings) {
+  if (sound === "toggle") {
+    return chrome.runtime.getURL(TOGGLE_SOUND_FILE);
+  }
+  if (sound !== "doubt") return null;
+
+  const { doubtSoundId, customAudios } = settings;
+  if (BUILTIN_SOUNDS.includes(doubtSoundId)) {
+    return chrome.runtime.getURL(doubtSoundId);
+  }
+
+  const custom = customAudios.find((t) => t.id === doubtSoundId);
+  if (custom?.dataUrl) return custom.dataUrl;
+
+  return chrome.runtime.getURL(DEFAULT_SETTINGS.doubtSoundId);
+}
+
+function requestOffscreenFallback(sound) {
   try {
     chrome.runtime.sendMessage({ type: "PLAY_ALERT", sound }, () => {
       void chrome.runtime.lastError;
     });
   } catch {
     // Extension context invalidated — ignore
+  }
+}
+
+async function playAlert(sound) {
+  try {
+    const settings = await loadAudioPlaySettings();
+    if (!settings.audioEnabled) {
+      log("play skipped (muted)", sound);
+      return;
+    }
+
+    const src = resolveAlertSrc(sound, settings);
+    if (!src) {
+      log("play skipped (unknown sound)", sound);
+      return;
+    }
+
+    log("play in page", sound, { volume: settings.audioVolume });
+    const audio = new Audio(src);
+    audio.volume = settings.audioVolume;
+    await audio.play();
+  } catch (err) {
+    log("in-page play failed, falling back to offscreen", err?.message || err);
+    requestOffscreenFallback(sound);
   }
 }
 
