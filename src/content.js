@@ -11,6 +11,7 @@ const DOUBT_DEBOUNCE_MS = 300;
 const DOUBT_ACCEPT_WINDOW_SEC = 90;
 const MIN_REMAINING_SEC = 20;
 const MAX_REMAINING_SEC = 80;
+const LOG_PREFIX = "[DoubtTracker]";
 
 let slotStart = DEFAULT_SETTINGS.slotStart;
 let slotEnd = DEFAULT_SETTINGS.slotEnd;
@@ -18,6 +19,7 @@ let autoAcceptEnabled = DEFAULT_SETTINGS.autoAcceptEnabled;
 let autoAcceptRemainingSec = DEFAULT_SETTINGS.autoAcceptRemainingSec;
 let watching = false;
 let waitingForReady = false;
+let watchedBtn = null;
 let toggleObserver = null;
 let doubtObserver = null;
 let remountObserver = null;
@@ -26,8 +28,18 @@ let doubtDebounceTimer = null;
 let autoAcceptTimer = null;
 let lastHadAcceptReject = false;
 
+function log(...args) {
+  console.log(LOG_PREFIX, ...args);
+}
+
 function playAlert(sound) {
-  chrome.runtime.sendMessage({ type: "PLAY_ALERT", sound });
+  try {
+    chrome.runtime.sendMessage({ type: "PLAY_ALERT", sound }, () => {
+      void chrome.runtime.lastError;
+    });
+  } catch {
+    // Extension context invalidated — ignore
+  }
 }
 
 function parseTimeToMinutes(hhmm) {
@@ -131,21 +143,62 @@ function clearAutoAcceptTimer() {
 
 function scheduleAutoAccept() {
   clearAutoAcceptTimer();
-  if (!autoAcceptEnabled) return;
+  if (!autoAcceptEnabled) {
+    log("auto-accept skipped (disabled)");
+    return;
+  }
 
   const remaining = clampRemainingSec(autoAcceptRemainingSec);
   const delayMs = Math.max(0, (DOUBT_ACCEPT_WINDOW_SEC - remaining) * 1000);
+  const delaySec = delayMs / 1000;
+
+  log(`auto-accept scheduled in ${delaySec}s (accept when ${remaining}s remaining)`);
 
   autoAcceptTimer = setTimeout(() => {
     autoAcceptTimer = null;
-    if (!autoAcceptEnabled || !pageContainsAcceptReject()) return;
+    if (!autoAcceptEnabled) {
+      log("auto-accept skipped (disabled)");
+      return;
+    }
+    if (!pageContainsAcceptReject()) {
+      log("auto-accept skipped (ui gone)");
+      return;
+    }
 
     const acceptBtn = findAcceptButton();
     if (acceptBtn?.isConnected) {
       acceptBtn.click();
-      console.log("AUTO ACCEPTED DOUBT");
+      log("AUTO ACCEPTED");
+    } else {
+      log("auto-accept skipped (no button)");
     }
   }, delayMs);
+}
+
+function evaluateDoubtPresence({ source }) {
+  const hasAcceptReject = pageContainsAcceptReject();
+
+  log("evaluateDoubtPresence", {
+    source,
+    hasAcceptReject,
+    lastHadAcceptReject,
+    watching,
+    autoAcceptPending: Boolean(autoAcceptTimer),
+  });
+
+  if (!lastHadAcceptReject && hasAcceptReject) {
+    log("NEW DOUBT detected — playing sound, scheduling auto-accept");
+    playAlert("doubt");
+    scheduleAutoAccept();
+  } else if (lastHadAcceptReject && !hasAcceptReject) {
+    log("Accept UI gone — clearing auto-accept timer");
+    clearAutoAcceptTimer();
+  } else if (source === "visibility" && hasAcceptReject && autoAcceptEnabled && !autoAcceptTimer) {
+    log("visibility re-arm — Accept UI present, no pending timer");
+    scheduleAutoAccept();
+  }
+
+  lastHadAcceptReject = hasAcceptReject;
 }
 
 function stopWatchers() {
@@ -168,7 +221,9 @@ function stopWatchers() {
     doubtDebounceTimer = null;
   }
   watching = false;
+  watchedBtn = null;
   lastHadAcceptReject = false;
+  log("stopWatchers");
 }
 
 function watchToggleButton(btn) {
@@ -182,6 +237,7 @@ function watchToggleButton(btn) {
 
     if (lastState && !currentState && !isRestoring) {
       isRestoring = true;
+      log("Take Doubt toggled OFF — restoring");
       playAlert("toggle");
 
       setTimeout(() => {
@@ -207,24 +263,14 @@ function watchToggleButton(btn) {
 
 function watchNewDoubts() {
   lastHadAcceptReject = pageContainsAcceptReject();
+  log("watchNewDoubts start", { lastHadAcceptReject });
 
   doubtObserver = new MutationObserver(() => {
     if (doubtDebounceTimer) clearTimeout(doubtDebounceTimer);
 
     doubtDebounceTimer = setTimeout(() => {
-      const hasAcceptReject = pageContainsAcceptReject();
-
-      if (!lastHadAcceptReject && hasAcceptReject) {
-        playAlert("doubt");
-        console.log("AN INCOMING DOUBT...");
-        scheduleAutoAccept();
-      }
-
-      if (lastHadAcceptReject && !hasAcceptReject) {
-        clearAutoAcceptTimer();
-      }
-
-      lastHadAcceptReject = hasAcceptReject;
+      doubtDebounceTimer = null;
+      evaluateDoubtPresence({ source: "mutation" });
     }, DOUBT_DEBOUNCE_MS);
   });
 
@@ -236,22 +282,33 @@ function watchNewDoubts() {
 }
 
 function watchForRemount(btn) {
+  const rebootstrap = () => {
+    log("toggle disconnected, re-bootstrapping");
+    stopWatchers();
+    // Defer so we are not blocked by waitingForReady still true inside bootstrapAfterReady
+    setTimeout(() => bootstrapAfterReady(), 0);
+  };
+
   remountObserver = new MutationObserver(() => {
     if (btn.isConnected) return;
-
-    stopWatchers();
-    bootstrapAfterReady();
+    rebootstrap();
   });
 
   remountObserver.observe(document.documentElement, {
     childList: true,
     subtree: true,
   });
+
+  if (!btn.isConnected) {
+    rebootstrap();
+  }
 }
 
 function startWatchers(btn) {
   stopWatchers();
   watching = true;
+  watchedBtn = btn;
+  log("startWatchers", { inSlot: isWithinSlot() });
   watchToggleButton(btn);
   watchNewDoubts();
   watchForRemount(btn);
@@ -260,6 +317,15 @@ function startWatchers(btn) {
 function syncWatchingState() {
   const inSlot = isWithinSlot();
   const btn = findTakeDoubtToggle();
+
+  if (watching && watchedBtn && !watchedBtn.isConnected) {
+    log("syncWatchingState: watched toggle disconnected");
+    stopWatchers();
+    if (!btn) {
+      if (!waitingForReady) bootstrapAfterReady();
+      return;
+    }
+  }
 
   if (!btn) {
     if (watching) stopWatchers();
@@ -270,8 +336,20 @@ function syncWatchingState() {
   if (inSlot && !watching) {
     startWatchers(btn);
   } else if (!inSlot && watching) {
+    log("syncWatchingState: outside slot");
     stopWatchers();
   }
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === "hidden") {
+    log("tab hidden");
+    return;
+  }
+
+  log("tab visible, re-checking doubt");
+  if (!watching) return;
+  evaluateDoubtPresence({ source: "visibility" });
 }
 
 async function loadSettings() {
@@ -287,10 +365,14 @@ async function loadSettings() {
 async function bootstrapAfterReady() {
   if (waitingForReady) return;
   waitingForReady = true;
+  log("bootstrapAfterReady: waiting for Take Doubt toggle");
 
   try {
     const btn = await waitForReady();
-    if (!isWithinSlot()) return;
+    if (!isWithinSlot()) {
+      log("bootstrapAfterReady: outside slot, not starting watchers");
+      return;
+    }
     startWatchers(btn);
   } finally {
     waitingForReady = false;
@@ -298,12 +380,22 @@ async function bootstrapAfterReady() {
 }
 
 async function init() {
+  log("init");
   await waitForDocumentComplete();
   await loadSettings();
+  log("settings loaded", {
+    slotStart,
+    slotEnd,
+    autoAcceptEnabled,
+    autoAcceptRemainingSec,
+    inSlot: isWithinSlot(),
+  });
   await bootstrapAfterReady();
 
   if (slotTimer) clearInterval(slotTimer);
   slotTimer = setInterval(syncWatchingState, SLOT_CHECK_MS);
+
+  document.addEventListener("visibilitychange", onVisibilityChange);
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "sync") return;
@@ -322,6 +414,12 @@ async function init() {
       autoAcceptRemainingSec = clampRemainingSec(changes.autoAcceptRemainingSec.newValue);
     }
 
+    log("settings changed", {
+      slotStart,
+      slotEnd,
+      autoAcceptEnabled,
+      autoAcceptRemainingSec,
+    });
     syncWatchingState();
   });
 }
