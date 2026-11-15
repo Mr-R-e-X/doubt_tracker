@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Doubt Tracker</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
-
 <body>
   <main>
     <h1>Watching slot</h1>
@@ -39,58 +37,20 @@
       <div id="autoAcceptOptions" class="auto-accept-options" hidden>
         <label>
           Accept when seconds remaining
-          <input type="number" id="autoAcceptRemainingSec" min="5" max="80" step="1" />
+          <input
+            type="number"
+            id="autoAcceptRemainingSec"
+            min="5"
+            max="80"
+            step="1"
+          />
         </label>
       </div>
     </section>
-
-
-    <section class="audio-settings">
-      <label class="toggle-row">
-        <span>Enable alert sound</span>
-        <input type="checkbox" id="audioEnabled" checked />
-      </label>
-
-      <div id="audioOptions" class="audio-options">
-        <div class="volume-control">
-          <div class="volume-header">
-            <span>Volume</span>
-            <span id="audioVolumeLabel" class="volume-badge">100%</span>
-          </div>
-          <input type="range" id="audioVolume" min="0" max="1" step="0.05" value="1" />
-        </div>
-
-        <label>
-          Alert sound
-          <select id="audioPreset" class="dark-select">
-            <option value="ding.mp3">Default Ding (ding.mp3)</option>
-            <option value="alert.mp3">Alert Tone (alert.mp3)</option>
-          </select>
-        </label>
-
-        <div class="custom-audio-box">
-          <input type="file" id="customAudioFile" accept="audio/*" hidden />
-          <div class="custom-file-row">
-            <button type="button" id="pickAudioBtn" class="btn-secondary full-width">
-              + Add Custom Audio File
-            </button>
-          </div>
-          <p class="hint">Saved permanently in browser storage (max 4 MB per file)</p>
-          <ul id="customAudioList" class="custom-audio-list"></ul>
-        </div>
-
-        <button type="button" id="testAudioBtn" class="btn-secondary full-width">
-          Test Sound
-        </button>
-      </div>
-    </section>
-
-
 
     <button type="button" id="save">Save</button>
     <p id="status" class="status" aria-live="polite"></p>
   </main>
   <script type="module" src="./popup.js"></script>
 </body>
-
 </html>
