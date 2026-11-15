@@ -2,7 +2,7 @@ const DEFAULT_SETTINGS = {
   slotStart: "21:00",
   slotEnd: "23:59",
   autoAcceptEnabled: false,
-  autoAcceptRemainingSec: 20
+  autoAcceptRemainingSec: 20,
 };
 const TOGGLE_ID_FALLBACK = "#mat-mdc-slide-toggle-1-button";
 const SLOT_CHECK_MS = 30_000;
@@ -52,9 +52,7 @@ function findTakeDoubtToggle() {
   for (const toggle of document.querySelectorAll("mat-slide-toggle")) {
     const labeledBy = toggle.getAttribute("aria-labelledby");
     const ariaLabel = toggle.getAttribute("aria-label") || "";
-    const labelText = labeledBy
-      ? document.getElementById(labeledBy)?.textContent || ""
-      : "";
+    const labelText = labeledBy ? document.getElementById(labeledBy)?.textContent || "" : "";
     const nearby = toggle.parentElement?.textContent || "";
     const haystack = `${ariaLabel} ${labelText} ${nearby} ${toggle.textContent || ""}`;
 
@@ -98,7 +96,7 @@ function waitForReady() {
 
     observer.observe(document.documentElement, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
   });
 }
@@ -203,7 +201,7 @@ function watchToggleButton(btn) {
 
   toggleObserver.observe(btn, {
     attributes: true,
-    attributeFilter: ["class"]
+    attributeFilter: ["class"],
   });
 }
 
@@ -233,7 +231,7 @@ function watchNewDoubts() {
   doubtObserver.observe(document.body, {
     childList: true,
     subtree: true,
-    characterData: true
+    characterData: true,
   });
 }
 
@@ -247,7 +245,7 @@ function watchForRemount(btn) {
 
   remountObserver.observe(document.documentElement, {
     childList: true,
-    subtree: true
+    subtree: true,
   });
 }
 
@@ -282,7 +280,7 @@ async function loadSettings() {
   slotEnd = stored.slotEnd || DEFAULT_SETTINGS.slotEnd;
   autoAcceptEnabled = Boolean(stored.autoAcceptEnabled);
   autoAcceptRemainingSec = clampRemainingSec(
-    stored.autoAcceptRemainingSec ?? DEFAULT_SETTINGS.autoAcceptRemainingSec
+    stored.autoAcceptRemainingSec ?? DEFAULT_SETTINGS.autoAcceptRemainingSec,
   );
 }
 
@@ -321,9 +319,7 @@ async function init() {
       if (!autoAcceptEnabled) clearAutoAcceptTimer();
     }
     if (changes.autoAcceptRemainingSec) {
-      autoAcceptRemainingSec = clampRemainingSec(
-        changes.autoAcceptRemainingSec.newValue
-      );
+      autoAcceptRemainingSec = clampRemainingSec(changes.autoAcceptRemainingSec.newValue);
     }
 
     syncWatchingState();

@@ -4,9 +4,8 @@ async function ensureOffscreen() {
     await chrome.offscreen.createDocument({
       url: "src/offscreen.html",
       reasons: ["AUDIO_PLAYBACK"],
-      justification: "Play alert sound"
+      justification: "Play alert sound",
     });
-
   }
 }
 
@@ -16,7 +15,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   ensureOffscreen().then(() => {
     chrome.runtime.sendMessage({
       type: "PLAY_ALERT",
-      sound: msg.sound
+      sound: msg.sound,
     });
   });
 });

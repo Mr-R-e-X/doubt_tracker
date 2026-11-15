@@ -25,7 +25,7 @@ function includeOffscreen() {
       }
 
       return options;
-    }
+    },
   };
 }
 
@@ -35,6 +35,6 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    minify: true
-  }
+    minify: true,
+  },
 });

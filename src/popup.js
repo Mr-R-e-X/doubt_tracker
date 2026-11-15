@@ -2,7 +2,7 @@ const DEFAULTS = {
   slotStart: "21:00",
   slotEnd: "23:59",
   autoAcceptEnabled: false,
-  autoAcceptRemainingSec: 20
+  autoAcceptRemainingSec: 20,
 };
 
 const MIN_REMAINING_SEC = 20;
@@ -41,8 +41,7 @@ async function load() {
   startInput.value = stored.slotStart || DEFAULTS.slotStart;
   endInput.value = stored.slotEnd || DEFAULTS.slotEnd;
   autoAcceptEnabledInput.checked = Boolean(stored.autoAcceptEnabled);
-  autoAcceptRemainingInput.value =
-    stored.autoAcceptRemainingSec ?? DEFAULTS.autoAcceptRemainingSec;
+  autoAcceptRemainingInput.value = stored.autoAcceptRemainingSec ?? DEFAULTS.autoAcceptRemainingSec;
   syncAutoAcceptOptionsVisibility();
   setStatus(startInput.value, endInput.value);
 }
@@ -67,8 +66,7 @@ saveBtn.addEventListener("click", async () => {
 
   if (
     autoAcceptEnabled &&
-    (autoAcceptRemainingSec < MIN_REMAINING_SEC ||
-      autoAcceptRemainingSec > MAX_REMAINING_SEC)
+    (autoAcceptRemainingSec < MIN_REMAINING_SEC || autoAcceptRemainingSec > MAX_REMAINING_SEC)
   ) {
     statusEl.textContent = `Remaining seconds must be ${MIN_REMAINING_SEC}–${MAX_REMAINING_SEC}`;
     statusEl.className = "status outside";
@@ -77,7 +75,7 @@ saveBtn.addEventListener("click", async () => {
 
   autoAcceptRemainingSec = Math.min(
     MAX_REMAINING_SEC,
-    Math.max(MIN_REMAINING_SEC, Math.round(autoAcceptRemainingSec))
+    Math.max(MIN_REMAINING_SEC, Math.round(autoAcceptRemainingSec)),
   );
   autoAcceptRemainingInput.value = autoAcceptRemainingSec;
 
@@ -85,7 +83,7 @@ saveBtn.addEventListener("click", async () => {
     slotStart,
     slotEnd,
     autoAcceptEnabled,
-    autoAcceptRemainingSec
+    autoAcceptRemainingSec,
   });
 
   setStatus(slotStart, slotEnd, "Saved");

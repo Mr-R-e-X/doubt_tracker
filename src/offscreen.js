@@ -1,6 +1,6 @@
 const SOUND_FILES = {
   toggle: "alert.mp3",
-  doubt: "ding.mp3"
+  doubt: "ding.mp3",
 };
 
 chrome.runtime.onMessage.addListener((msg, sender) => {

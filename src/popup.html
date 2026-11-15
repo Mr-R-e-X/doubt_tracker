@@ -1,56 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Doubt Tracker</title>
-  <link rel="stylesheet" href="popup.css" />
-</head>
-<body>
-  <main>
-    <h1>Watching slot</h1>
-    <p class="subtitle">Alerts run only during this daily window (local time).</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Doubt Tracker</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Watching slot</h1>
+      <p class="subtitle">Alerts run only during this daily window (local time).</p>
 
-    <label>
-      Start
-      <input type="time" id="slotStart" required />
-    </label>
-
-    <label>
-      End
-      <input type="time" id="slotEnd" required />
-    </label>
-
-    <section class="auto-accept">
-      <label class="toggle-row">
-        <span>Auto accept</span>
-        <input type="checkbox" id="autoAcceptEnabled" />
+      <label>
+        Start
+        <input type="time" id="slotStart" required />
       </label>
 
-      <p class="hint">
-        Coding Ninjas gives about 90 seconds to Accept before auto-reject.
-        The value below is how many seconds should remain on that timer when we click Accept
-        (e.g. 20 ≈ accept with ~20s left). Accept can lag on slow networks keep at least
-        <strong>20</strong> seconds remaining.
-      </p>
+      <label>
+        End
+        <input type="time" id="slotEnd" required />
+      </label>
 
-      <div id="autoAcceptOptions" class="auto-accept-options" hidden>
-        <label>
-          Accept when seconds remaining
-          <input
-            type="number"
-            id="autoAcceptRemainingSec"
-            min="20"
-            max="80"
-            step="1"
-          />
+      <section class="auto-accept">
+        <label class="toggle-row">
+          <span>Auto accept</span>
+          <input type="checkbox" id="autoAcceptEnabled" />
         </label>
-      </div>
-    </section>
 
-    <button type="button" id="save">Save</button>
-    <p id="status" class="status" aria-live="polite"></p>
-  </main>
-  <script type="module" src="./popup.js"></script>
-</body>
+        <p class="hint">
+          Coding Ninjas gives about 90 seconds to Accept before auto-reject. The value below is how
+          many seconds should remain on that timer when we click Accept (e.g. 20 ≈ accept with ~20s
+          left). Accept can lag on slow networks keep at least
+          <strong>20</strong> seconds remaining.
+        </p>
+
+        <div id="autoAcceptOptions" class="auto-accept-options" hidden>
+          <label>
+            Accept when seconds remaining
+            <input type="number" id="autoAcceptRemainingSec" min="20" max="80" step="1" />
+          </label>
+        </div>
+      </section>
+
+      <button type="button" id="save">Save</button>
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="./popup.js"></script>
+  </body>
 </html>
